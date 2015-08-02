@@ -27,6 +27,7 @@ var paths = {
         './node_modules/**',
         './bower_components/**',
         './vendor/**',
+        './stylesheets/*.css',
         './**/*.html'
     ],
 }

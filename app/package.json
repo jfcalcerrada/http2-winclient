@@ -1,15 +1,16 @@
 {
-  "name": "electron-boilerplate",
-  "productName": "Electron Boilerplate",
-  "identifier": "com.example.electron-boilerplate",
-  "description": "Starter for your Electron application. Out of the box ready for serious stuff.",
+  "name": "h2tester",
+  "productName": "HTTP2 Tester",
+  "identifier": "com.uc3m.http2",
+  "description": "Application built on top of Electron to test HTTP/2 requests on different ports.",
   "version": "0.1.0",
-  "author": "Mr Gumby <gumby@sillywalks.com>",
+  "author": "Jose F. Calcerrada <jfcalcerrada@yahoo.es>",
   "main": "main.js",
   "config": {
     "target": "development"
   },
   "dependencies": {
-    "fs-jetpack": "^0.6.5"
+    "fs-jetpack": "^0.6.5",
+    "http2": "^3.2.0"
   }
 }

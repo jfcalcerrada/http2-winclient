@@ -2,9 +2,10 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Electron Boilerplate</title>
+    <title>HTTP/2 Tester</title>
 
-    <link href="./stylesheets/main.css" rel="stylesheet" type="text/css">
+    <link href="./stylesheets/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="./stylesheets/main.css" rel="stylesheet" type="text/css" />
 
     <script src="vendor/electron_boilerplate/env_config.js"></script>
     <script src="vendor/electron_boilerplate/context_menu.js"></script>
@@ -13,19 +14,140 @@
     <script src="vendor/require.js"></script>
     <script>
         requirejs(['app'], function (app) {});
+        var ipc = require('ipc');
+        var INTERVAL = 400;
+        
+
+        var done  = 0;
+        var total = 0;
+        
+        var url;
+        var response;
+        
+        var flag = true; // sync flag
+        function request(response) {
+            if (flag) return;
+        
+            var url = response.urls.shift();
+            console.log(url);
+            
+            if (url) {
+                ipc.sendSync('http2-request', url);
+                if (flag) return;
+                
+                updateProgressBar();
+                setTimeout(function(){ request(response); }, INTERVAL);
+                
+            } else {
+                var parser  = document.createElement('a');
+                parser.href = url;
+                parser.pathname = response.finish
+                
+                ipc.sendSync('http-request', parser.href);
+                flag = true;
+            }
+        }
+        
+        var progressbar;
+        window.addEventListener('DOMContentLoaded', function(event) {
+            progressbar = document.getElementById('progress-bar');
+        
+            document.getElementById('client').addEventListener('submit', function(event) {
+                event.returnValue = false;
+                event.preventDefault();
+                return false;
+            }, false);
+            
+            
+            url = document.getElementById('url');
+            var start = document.getElementById('start');
+            var stop  = document.getElementById('stop');
+            
+            start.addEventListener('click', function(event) {
+                event.returnValue = false;
+                event.preventDefault();
+                
+                url.disabled   = true;
+                start.disabled = true;
+                
+                response = ipc.sendSync('http-request', url.value);
+                // HANDLE better errors
+                if (!response.error && response.statusCode == 200) {
+                    start.classList.add('hidden');
+                    stop.classList.remove('hidden');
+                    progressbar.classList.remove('progress-bar-danger');
+                    
+                    done  = 0;
+                    total = response.content.urls.length;
+                    
+                    flag = false;
+                    request(response.content);
+                
+                } else {
+                    start.disabled = false;
+                    url.disabled   = false;
+                }
+                
+                return false;
+            }, false);
+            
+            
+            stop.addEventListener('click', function(event) {
+                event.returnValue = false;
+                event.preventDefault();
+                
+                stop.classList.add('hidden');
+                start.classList.remove('hidden');
+                start.disabled = false;
+                url.disabled   = false;
+                
+                updateProgressBar(true);
+                flag = true;
+                
+                return false;
+            }, false);
+        });
+        
+        
+        var updateProgressBar = function(reset) {
+            var completed = 0;
+            if (!reset) {
+                completed = (++done / total) * 100;
+            } else {
+                progressbar.classList.add('progress-bar-danger');
+            }
+            
+            progressbar.setAttribute('aria-valuenow', completed);
+            progressbar.style.width = completed + '%';
+        };
+        
     </script>
 
 </head>
 <body>
 
     <div class="container">
-        <h1 id="greet"></h1>
-        <p class="subtitle">
-            Welcome to <a href="http://electron.atom.io" class="js-external-link">Electron</a> app running on this magnificent <strong id="platform-info"></strong> machine.
-        </p>
-        <p class="subtitle">
-            You are in <strong id="env-name"></strong> environment.
-        </p>
+        <div class="welcome">
+            <h1>HTTP/2 Tester</h1>
+            <p class="subtitle">
+                Welcome to <a href="http://electron.atom.io" class="js-external-link">Electron</a> app running on this magnificent <strong id="platform-info"></strong> machine.
+            </p>
+            <p class="subtitle">
+                You are in <strong id="env-name"></strong> environment.
+            </p>
+        </div>
+        
+        <div id="initiator">
+            <form id="client">
+                <input type="text" id="url" class="form-control" name="url" value="http://163.117.253.7/start/win" />
+                <input type="submit" id="start" class="btn btn-primary" value="Start" />
+                <input type="submit" id="stop"  class="btn btn-danger hidden" value="Stop" />
+            </form>
+        </div>
+        
+        <div id="progress" class="progress">
+            <div id="progress-bar" class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+        </div>
     </div>
 
 </body>
